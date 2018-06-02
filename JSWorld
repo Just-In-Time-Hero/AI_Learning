@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+
+<script>
+function randInt(min, max) {
+    return Math.floor(Math.random() * (max+1 - min) ) + min;
+}
+
+var size = 2;
+var multi = 256;
+var locations = [];
+var myBlocks = [];
+var myGameArea = {
+	canvas : document.createElement("canvas"),
+	start : function() {
+		this.canvas.width = size*multi;
+		this.canvas.height = size*multi;
+		this.canvas.style.display = "block";
+		this.canvas.style.margin = "auto";
+		this.canvas.style.marginTop = "100px";
+		this.context = this.canvas.getContext("2d");
+		this.frame = 0;
+		document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+		this.interval = setInterval(updateGameArea, 20);
+    },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		ctx = myGameArea.context;
+		ctx.lineWidth = "0px";
+		ctx.moveTo(size*multi/2,size*multi);
+		ctx.lineTo(size*multi/2,0);
+		ctx.stroke();
+		ctx.moveTo(0,size*multi/2);
+		ctx.lineTo(size*multi,size*multi/2);
+		ctx.stroke();
+    }
+}
+function startGame() {
+	myBlocks.push(new Blawkite(size, size, "red", size*multi/2, size*multi/2));
+	myBlocks.push(new Blawkite(size, size, "blue", size*multi/2, size*multi/2));
+	locations.push([size*multi/2, size*multi/2]);
+	locations.push([size*multi/2, size*multi/2]);
+	i = 0;
+	myGameArea.start();
+}
+function moveCheck(pos, dirx, diry) {
+	if (pos[0]+dirx*size>=size*multi || pos[0]+dirx*size<0
+	|| pos[1]+diry*size>=size*multi || pos[1]+diry*size<0) {
+		return false;
+	}
+	counter = 0;
+	while (counter < locations.length) {
+		if (pos[0]+dirx*size==locations[counter][0] && pos[1]+diry*size==locations[counter][1]) {
+			return false;
+		}
+		counter++;
+	}
+	return true;
+}
+
+function move(comp)
+{
+	pos = [comp.x, comp.y]
+	dirx = randInt(-1,1);
+	diry = randInt(-1,1);
+	counter = 0;
+	while (moveCheck(pos, dirx, diry) == false && counter < 5) {
+		dirx = randInt(-1,1);
+		diry = randInt(-1,1);
+		counter++;
+	}
+	if (moveCheck(pos, dirx, diry)) {
+		comp.x = comp.x + dirx*size;
+		comp.y = comp.y + diry*size;
+	}
+}
+
+function Blawkite(width, height, color, x, y) {
+	this.width = width;
+	this.height = height;
+	this.color = color;
+	this.x = x;
+	this.y = y;
+	this.life = 0;
+	this.dead = false;
+	this.update = function() {
+		if (!this.dead) {
+			ctx = myGameArea.context;
+			move(this)
+			ctx.fillStyle = color;
+			ctx.fillRect(this.x, this.y, this.width, this.height);
+			this.life++;
+		}
+		else {
+			ctx = myGameArea.context;
+			ctx.fillStyle = "gray";
+			ctx.fillRect(this.x, this.y, this.width, this.height);
+			this.life++;
+		}
+		if (this.life >= 500 && this.dead == false) {
+			console.log("Erk: " + this.life);
+			this.dead = true;
+		}
+	}
+}
+
+function updateGameArea() {
+	if (myGameArea.frame%1==0) {
+		myGameArea.clear();
+		i = 0;
+		while (i < myBlocks.length) {
+			myBlocks[i].update();
+			if (!myBlocks[i].dead) {
+				locations[i] = [myBlocks[i].x, myBlocks[i].y];
+			}
+			else {
+				locations[i] = [-10,-10];
+			}
+			i++;
+		}
+	}
+	myGameArea.frame++;
+	if (myGameArea.frame%100==0) {
+		i = 0;
+		temp = []
+		if (myBlocks.filter(block => block.dead == false).length < 500) {
+			while (i < myBlocks.length) {
+				if (!myBlocks[i].dead) {
+					temp.push(new Blawkite(size, size, myBlocks[i].color, myBlocks[i].x, myBlocks[i].y));
+					locations.push([myBlocks[i].x,myBlocks[i].y]);
+				}
+				i++;
+			}
+		}
+		else {
+			temp.push(new Blawkite(size, size, myBlocks[myBlocks.length-1].color,
+				myBlocks[myBlocks.length-1].x, myBlocks[myBlocks.length-1].y));
+			temp.push(new Blawkite(size, size, myBlocks[myBlocks.length-1].color,
+				myBlocks[myBlocks.length-1].x, myBlocks[myBlocks.length-1].y));
+			locations.push([myBlocks[myBlocks.length-1].x,myBlocks[myBlocks.length-1].y]);
+			locations.push([myBlocks[myBlocks.length-1].x,myBlocks[myBlocks.length-1].y]);
+		}
+		console.log(myBlocks.length);
+		console.log("Alive: " + myBlocks.filter(block => block.dead == false).length);
+		myBlocks = myBlocks.concat(temp);
+	}
+}
+</script>
+
+</body>
+</html>
